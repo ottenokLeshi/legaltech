@@ -10,15 +10,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-quality assurance, testing, test auto, test automation
-ml => machine learning and artificial intelligence, ml
-neural network => machine learning and artificial intelligence, neural network
-ai => machine learning and artificial intelligence, ai
-machine intelligence => machine learning and artificial intelligence, machine intelligence
-machine learning => machine learning and artificial intelligence, machine learning
+#-----------------------------------------------------------------------
+#some test synonym mappings unlikely to appear in real input text
+aaafoo => aaabar
+bbbfoo => bbbfoo bbbbar
+cccfoo => cccbar cccbaz
+fooaaa,baraaa,bazaaa
 
-search, ir, search engine, e-commerce search
-commerce, trade, browsing, spending, purchasing, electronic commerce, e-commerce
-data processing, data analysis and processing, big analytics, big data analytics, data analytics, data science, big data, data science
-phone, mobile
-ui, frontend, web, user interface
+# Some synonym groups specific to this example
+GB,gib,gigabyte,gigabytes
+MB,mib,megabyte,megabytes
+Television, Televisions, TV, TVs
+#notice we use "gib" instead of "GiB" so any WordDelimiterGraphFilter coming
+#after us won't split it into two words.
+
+# Synonym mappings can be used for spelling correction too
+pixima => pixma
+
