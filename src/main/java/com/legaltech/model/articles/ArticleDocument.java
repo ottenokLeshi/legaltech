@@ -5,7 +5,6 @@ import com.legaltech.model.posts.Post;
 import org.apache.solr.client.solrj.beans.Field;
 
 public class ArticleDocument implements Document {
-
     @Field
     private String supertype;
     @Field

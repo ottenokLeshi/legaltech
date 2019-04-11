@@ -2,8 +2,10 @@ package com.legaltech.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.legaltech.dao.ArticlesDAO;
+import com.legaltech.dao.ConceptsDAO;
 import com.legaltech.model.Document;
 import com.legaltech.model.articles.ArticleDocument;
+import com.legaltech.model.concepts.ConceptDocument;
 import com.legaltech.model.posts.Post;
 import com.legaltech.model.posts.PostsResponse;
 import org.apache.http.HttpResponse;
@@ -12,6 +14,8 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrServerException;
+import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.util.SimpleOrderedMap;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -41,11 +45,30 @@ public class IndexServiceImpl implements IndexService {
     @Autowired
     private ArticlesDAO articlesDAO;
 
+    /**
+     * Concepts DAO.
+     */
+    @Autowired
+    private ConceptsDAO conceptsDAO;
+
+
     @Override
     public void index() throws IOException, SolrServerException {
         indexArticles();
+        indexConcepts();
     }
 
+    /**
+     * @throws IOException - exception
+     * @throws SolrServerException - exception
+     */
+    private void indexConcepts() throws IOException, SolrServerException {
+        conceptsDAO.clearIndex();
+        List<Document> concepts = new ConceptsGenerator().getConcepts(Arrays.asList("authors", "topic"));
+
+        conceptsDAO.setConcepts(concepts);
+        conceptsDAO.commit();
+    }
 
     private void indexArticles() throws IOException, SolrServerException {
         articlesDAO.clearIndex();
@@ -54,7 +77,7 @@ public class IndexServiceImpl implements IndexService {
         for (Post post : new ArticlesGrabber().getPosts()) {
             StringBuilder builder = new StringBuilder();
             String fileName = post.doc_id.replace("/", "_") + ".txt";
-            System.out.println(articlesPath + "/" +fileName);
+//            System.out.println(articlesPath + "/" +fileName);
             try (BufferedReader br =
                          new BufferedReader(new FileReader(articlesPath + "/" + fileName))) {
                 builder.append(br.readLine());
@@ -65,6 +88,41 @@ public class IndexServiceImpl implements IndexService {
 
         articlesDAO.setArticles(articles);
         articlesDAO.commit();
+    }
+
+    /**
+     * ConceptsGenerator class.
+     */
+    private class ConceptsGenerator {
+        /**
+         * @param fields - list of fields in Articles core
+         * @return list with documents
+         * @throws IOException - exception
+         * @throws SolrServerException - exception
+         */
+        List<Document> getConcepts(final List<String> fields) throws IOException, SolrServerException {
+
+            QueryResponse response = articlesDAO.getFacets(fields);
+
+            List<Document> concepts = new ArrayList<>();
+            int id = 0;
+
+            for (String field : fields) {
+                List<SimpleOrderedMap> recursive = (List<SimpleOrderedMap>) response
+                        .getResponse()
+                        .findRecursive("facets", field, "buckets");
+                if (recursive == null) {
+                    continue;
+                }
+                for (SimpleOrderedMap map : recursive) {
+                    String term = map.get("val").toString();
+                    concepts.add(new ConceptDocument(Integer.toString(id), field, term));
+                    id++;
+                }
+            }
+
+            return concepts;
+        }
     }
 
     /**
