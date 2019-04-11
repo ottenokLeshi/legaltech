@@ -64,7 +64,7 @@ public class IndexServiceImpl implements IndexService {
      */
     private void indexConcepts() throws IOException, SolrServerException {
         conceptsDAO.clearIndex();
-        List<Document> concepts = new ConceptsGenerator().getConcepts(Arrays.asList("authors", "topic"));
+        List<Document> concepts = new ConceptsGenerator().getConcepts(Arrays.asList("title", "supertype"));
 
         conceptsDAO.setConcepts(concepts);
         conceptsDAO.commit();
