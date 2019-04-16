@@ -41,4 +41,36 @@ public class SearchQuery {
     public int getMaxResults() {
         return maxResults;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        SearchQuery that = (SearchQuery) o;
+
+        if (minResults != that.minResults) return false;
+        if (maxResults != that.maxResults) return false;
+        if (query != null ? !query.equals(that.query) : that.query != null) return false;
+        return filter != null ? filter.equals(that.filter) : that.filter == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = query != null ? query.hashCode() : 0;
+        result = 31 * result + (filter != null ? filter.hashCode() : 0);
+        result = 31 * result + minResults;
+        result = 31 * result + maxResults;
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "SearchQuery{" +
+                "query='" + query + '\'' +
+                ", filter=" + filter +
+                ", minResults=" + minResults +
+                ", maxResults=" + maxResults +
+                '}';
+    }
 }

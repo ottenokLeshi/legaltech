@@ -85,4 +85,46 @@ public class ArticleDocument implements Document {
     public void setText(String text) {
         this.text = text;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ArticleDocument that = (ArticleDocument) o;
+
+        if (supertype != null ? !supertype.equals(that.supertype) : that.supertype != null) return false;
+        if (release_date != null ? !release_date.equals(that.release_date) : that.release_date != null) return false;
+        if (doc_type != null ? !doc_type.equals(that.doc_type) : that.doc_type != null) return false;
+        if (text_source_url != null ? !text_source_url.equals(that.text_source_url) : that.text_source_url != null)
+            return false;
+        if (title != null ? !title.equals(that.title) : that.title != null) return false;
+        if (doc_id != null ? !doc_id.equals(that.doc_id) : that.doc_id != null) return false;
+        return text != null ? text.equals(that.text) : that.text == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = supertype != null ? supertype.hashCode() : 0;
+        result = 31 * result + (release_date != null ? release_date.hashCode() : 0);
+        result = 31 * result + (doc_type != null ? doc_type.hashCode() : 0);
+        result = 31 * result + (text_source_url != null ? text_source_url.hashCode() : 0);
+        result = 31 * result + (title != null ? title.hashCode() : 0);
+        result = 31 * result + (doc_id != null ? doc_id.hashCode() : 0);
+        result = 31 * result + (text != null ? text.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "ArticleDocument{" +
+                "supertype='" + supertype + '\'' +
+                ", release_date='" + release_date + '\'' +
+                ", doc_type='" + doc_type + '\'' +
+                ", text_source_url='" + text_source_url + '\'' +
+                ", title='" + title + '\'' +
+                ", doc_id='" + doc_id + '\'' +
+                ", text='" + text + '\'' +
+                '}';
+    }
 }

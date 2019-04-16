@@ -41,4 +41,33 @@ public class ConceptDocument  implements Document {
     public void setSearchTerm(String searchTerm) {
         this.searchTerm = searchTerm;
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ConceptDocument that = (ConceptDocument) o;
+
+        if (id != null ? !id.equals(that.id) : that.id != null) return false;
+        if (field != null ? !field.equals(that.field) : that.field != null) return false;
+        return searchTerm != null ? searchTerm.equals(that.searchTerm) : that.searchTerm == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = id != null ? id.hashCode() : 0;
+        result = 31 * result + (field != null ? field.hashCode() : 0);
+        result = 31 * result + (searchTerm != null ? searchTerm.hashCode() : 0);
+        return result;
+    }
+
+    @Override
+    public String toString() {
+        return "ConceptDocument{" +
+                "id='" + id + '\'' +
+                ", field='" + field + '\'' +
+                ", searchTerm='" + searchTerm + '\'' +
+                '}';
+    }
 }
