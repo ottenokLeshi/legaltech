@@ -31,6 +31,12 @@ public class SearchServiceImpl implements SearchService {
     @Value("${first.search.pass.dismax.mm}")
     private Integer firstSearchPassMaxOverlap;
 
+    @Value("${second.search.pass.dismax.mm}")
+    private Integer secondSearchPassMaxOverlap;
+
+    @Value("${minimum.found.documents.amount}")
+    private Integer minFoundAmount;
+
     @Override
     public SearchResponse search(SearchQuery searchQuery) throws IOException, SolrServerException {
         if (searchQuery == null) {
@@ -39,6 +45,10 @@ public class SearchServiceImpl implements SearchService {
         logger.info(searchQuery.getQuery());
 
         SearchResponse searchResponse = searchFirstPath(searchQuery);
+
+        if (searchResponse.getNumFound() < minFoundAmount) {
+            searchResponse = searchSecondPath(searchQuery);
+        }
         return searchResponse;
     }
 
@@ -47,7 +57,6 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private SearchResponse searchFirstPath(SearchQuery searchQuery) throws IOException, SolrServerException {
-        SearchResponse searchResponse;
         ConceptSearchResult conceptSearchResult = null;
         SolrQuery solrQuery;
 
@@ -61,6 +70,30 @@ public class SearchServiceImpl implements SearchService {
             solrQuery.setQuery("{!dismax qf='text title' mm=" + firstSearchPassMaxOverlap + "%}" + searchQuery.getQuery());
 
         }
+
+        return getSearchResponse(solrQuery, conceptSearchResult);
+    }
+
+    private SearchResponse searchSecondPath(SearchQuery searchQuery) throws IOException, SolrServerException {
+        ConceptSearchResult conceptSearchResult = null;
+        SolrQuery solrQuery;
+
+        if (conceptSearchEnabled) {
+            conceptSearchResult = getConcepts(searchQuery);
+            solrQuery = buildFirstPathSolrQueryWithConcepts(searchQuery, conceptSearchResult);
+            solrQuery.setQuery("{!dismax qf='text title' mm=" + secondSearchPassMaxOverlap + "%}" + conceptSearchResult.getUnrecognizedQuery());
+
+        } else {
+            solrQuery = buildFirstPathSolrQuery(searchQuery);
+            solrQuery.setQuery("{!dismax qf='text title' mm=" + secondSearchPassMaxOverlap + "%}" + searchQuery.getQuery());
+
+        }
+
+        return getSearchResponse(solrQuery, conceptSearchResult);
+    }
+
+    private SearchResponse getSearchResponse(SolrQuery solrQuery, ConceptSearchResult conceptSearchResult) throws IOException, SolrServerException {
+        SearchResponse searchResponse;
 
         QueryResponse queryResponse = articleDAO.getArticles(solrQuery);
 

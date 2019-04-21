@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" ?>
 <config>
-    <luceneMatchVersion>7.4.0</luceneMatchVersion>
+    <luceneMatchVersion>8.0.0</luceneMatchVersion>
 
     <dataDir>${solr.data.dir:}/concepts</dataDir>
 

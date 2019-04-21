@@ -18,7 +18,7 @@ public class SearchResponse {
   
     public SearchResponse(QueryResponse queryResponse) {
         SolrDocumentList results = queryResponse.getResults();
-        numFound = results.getNumFound();
+        setNumFound(results.getNumFound());
         for (SolrDocument result : results) {
             String id = (String) result.getFieldValue("id");
             String title = (String) result.getFieldValue("title");
@@ -29,7 +29,7 @@ public class SearchResponse {
 
     public SearchResponse(QueryResponse queryResponse, List<String> conceptsFilters) {
         SolrDocumentList results = queryResponse.getResults();
-        numFound = results.getNumFound();
+        setNumFound(results.getNumFound());
         for (SolrDocument result : results) {
             String id = (String) result.getFieldValue("id");
             String title = (String) result.getFieldValue("title");
