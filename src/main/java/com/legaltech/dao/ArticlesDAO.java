@@ -5,14 +5,26 @@ import com.legaltech.model.Document;
 import com.legaltech.model.search.ConceptSearchResult;
 import com.legaltech.model.search.SearchQuery;
 import com.legaltech.model.search.SearchResponse;
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.impl.client.HttpClientBuilder;
+import org.apache.http.util.EntityUtils;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.client.solrj.response.SpellCheckResponse;
+import org.apache.solr.handler.component.SpellCheckComponent;
+import org.apache.solr.spelling.SolrSpellChecker;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Repository;
 
 import java.io.IOException;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -125,4 +137,51 @@ public class ArticlesDAO implements CoreDAO {
     public void commit() throws IOException, SolrServerException {
         solrDAO.commit(ARTICLES);
     }
+
+    public String getSpellCheckCorrection(SolrQuery solrQuery) throws IOException, URISyntaxException {
+        HttpClient client = HttpClientBuilder.create().build();
+        URI uri = new URI("http://localhost:8080/articles/spell");
+        uri = new URI(uri.getScheme(), uri.getAuthority(),
+                uri.getPath(), "spellcheck=on&spellcheck.q=" + solrQuery.getQuery(), uri.getFragment());
+
+        HttpGet request = new HttpGet(uri);
+        HttpResponse response = client.execute(request);
+
+        String fullEntity = EntityUtils.toString(response.getEntity());
+
+        List rawConcepts = new ObjectMapper().readValue(fullEntity.substring(fullEntity.indexOf("\"suggestions\":[") + IDENTATION, fullEntity.length() - 1), List.class);
+
+        return extractSpellCorrections(solrQuery.getQuery(), rawConcepts);
+    }
+
+    private  String extractSpellCorrections(final String searchString, final List rawConcepts) {
+        Map<String, String> correctedTermsMap = new HashMap<>();
+        String correctedString = searchString;
+        for (int i = 0; i < rawConcepts.size(); i++) {
+            if (i % 2 == 1) {
+                continue;
+            }
+            String term = ((LinkedHashMap) ((ArrayList) ((LinkedHashMap) rawConcepts.get(i + 1)).get("suggestion")).get(0)).get("word").toString();
+            String startOffset = ((LinkedHashMap) rawConcepts.get(i + 1)).get("startOffset").toString();
+            String endOffset = ((LinkedHashMap) rawConcepts.get(i + 1)).get("endOffset").toString();
+            correctedTermsMap.put(searchString.substring(Integer.parseInt(startOffset), Integer.parseInt(endOffset)), term);
+        }
+
+        for (Map.Entry<String, String> entry : correctedTermsMap.entrySet()) {
+            correctedString = correctedString.replace(entry.getKey(), entry.getValue());
+        }
+        return correctedString;
+    }
+
+    /**
+     * Identation constant in received json.
+     */
+    private static final int IDENTATION = 14;
+
+    /**
+     * Position of id in wraped list.
+     */
+    private static final int POSITION_ID = 7;
+
+
 }

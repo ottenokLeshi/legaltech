@@ -84,6 +84,7 @@ public class IndexServiceImpl implements IndexService {
             }
             post.text = builder.toString();
             articles.add(new ArticleDocument(post));
+            k++;
         }
 
         articlesDAO.setArticles(articles);

@@ -200,7 +200,6 @@
       <tokenizer class="solr.StandardTokenizerFactory"/>
       <filter class="solr.LowerCaseFilterFactory"/>
       <filter class="solr.StopFilterFactory" format="snowball" words="lang/stopwords_ru.txt" ignoreCase="true"/>
-      <filter class="solr.SnowballPorterFilterFactory" language="Russian"/>
       <filter class="solr.RussianLightStemFilterFactory"/>
     </analyzer>
   </fieldType>

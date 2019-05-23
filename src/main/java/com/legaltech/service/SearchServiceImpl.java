@@ -9,12 +9,14 @@ import com.legaltech.model.search.SearchResponse;
 import org.apache.solr.client.solrj.SolrQuery;
 import org.apache.solr.client.solrj.SolrServerException;
 import org.apache.solr.client.solrj.response.QueryResponse;
+import org.apache.solr.common.util.Pair;
 import org.slf4j.Logger;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
+import java.util.Map;
 
 @Service
 public class SearchServiceImpl implements SearchService {
@@ -38,7 +40,7 @@ public class SearchServiceImpl implements SearchService {
     private Integer minFoundAmount;
 
     @Override
-    public SearchResponse search(SearchQuery searchQuery) throws IOException, SolrServerException {
+    public SearchResponse search(SearchQuery searchQuery) throws Exception {
         if (searchQuery == null) {
             searchQuery = new SearchQuery();
         }
@@ -46,9 +48,9 @@ public class SearchServiceImpl implements SearchService {
 
         SearchResponse searchResponse = searchFirstPath(searchQuery);
 
-        if (searchResponse.getNumFound() < minFoundAmount) {
+//        if (searchResponse.getNumFound() < minFoundAmount) {
             searchResponse = searchSecondPath(searchQuery);
-        }
+//        }
         return searchResponse;
     }
 
@@ -56,38 +58,54 @@ public class SearchServiceImpl implements SearchService {
         return conceptsDAO.getConcepts(searchQuery.getQuery());
     }
 
-    private SearchResponse searchFirstPath(SearchQuery searchQuery) throws IOException, SolrServerException {
-        ConceptSearchResult conceptSearchResult = null;
-        SolrQuery solrQuery;
+    private SearchResponse searchFirstPath(SearchQuery searchQuery) throws Exception {
+        Pair<SolrQuery, ConceptSearchResult> pair = createSolrQueryWithConcepts(searchQuery);
 
-        if (conceptSearchEnabled) {
-            conceptSearchResult = getConcepts(searchQuery);
-            solrQuery = buildFirstPathSolrQueryWithConcepts(searchQuery, conceptSearchResult);
-            solrQuery.setQuery("{!dismax qf='text title' mm=" + firstSearchPassMaxOverlap + "%}" + conceptSearchResult.getUnrecognizedQuery());
-
-        } else {
-            solrQuery = buildFirstPathSolrQuery(searchQuery);
-            solrQuery.setQuery("{!dismax qf='text title' mm=" + firstSearchPassMaxOverlap + "%}" + searchQuery.getQuery());
-
-        }
+        SolrQuery solrQuery = pair.first();
+        ConceptSearchResult conceptSearchResult = pair.second();
 
         return getSearchResponse(solrQuery, conceptSearchResult);
     }
 
-    private SearchResponse searchSecondPath(SearchQuery searchQuery) throws IOException, SolrServerException {
+
+    private Pair<SolrQuery, ConceptSearchResult> createSolrQueryWithConcepts(SearchQuery searchQuery) throws Exception {
         ConceptSearchResult conceptSearchResult = null;
         SolrQuery solrQuery;
-
         if (conceptSearchEnabled) {
             conceptSearchResult = getConcepts(searchQuery);
             solrQuery = buildFirstPathSolrQueryWithConcepts(searchQuery, conceptSearchResult);
-            solrQuery.setQuery("{!dismax qf='text title' mm=" + secondSearchPassMaxOverlap + "%}" + conceptSearchResult.getUnrecognizedQuery());
+            String unrecognized = "";
+            if (conceptSearchResult.getUnrecognizedQuery().isEmpty() && !conceptSearchResult.getConceptsFilters().isEmpty()) {
+                solrQuery.setQuery("*:*");
+                return new Pair<>(solrQuery, conceptSearchResult);
+            } else {
+                unrecognized = conceptSearchResult.getUnrecognizedQuery();
+            }
+            solrQuery.setQuery("{!dismax qf='text title^2' mm=" + firstSearchPassMaxOverlap + "%}" + unrecognized);
 
         } else {
             solrQuery = buildFirstPathSolrQuery(searchQuery);
-            solrQuery.setQuery("{!dismax qf='text title' mm=" + secondSearchPassMaxOverlap + "%}" + searchQuery.getQuery());
-
+            solrQuery.setQuery("{!dismax qf='text title^2' mm=" + firstSearchPassMaxOverlap + "%}" + searchQuery.getQuery());
         }
+
+        return new Pair<>(solrQuery, conceptSearchResult);
+    }
+    private SearchResponse searchSecondPath(SearchQuery searchQuery) throws Exception {
+        SolrQuery spellSolrQuery = new SolrQuery();
+        spellSolrQuery.setQuery(searchQuery.getQuery());
+        spellSolrQuery.setParam("spellcheck", "on");
+        String spellCheckResponse = articleDAO.getSpellCheckCorrection(spellSolrQuery);
+
+//        String searchStringQuery = searchQuery.getQuery();
+//        for (Map.Entry<String, String> entry : spellCheckResponse.entrySet()) {
+//            searchStringQuery.replace(entry.getKey(), entry.getValue());
+//        }
+//
+        searchQuery.setQuery(spellCheckResponse);
+        Pair<SolrQuery, ConceptSearchResult> pair = createSolrQueryWithConcepts(searchQuery);
+
+        SolrQuery solrQuery = pair.first();
+        ConceptSearchResult conceptSearchResult = pair.second();
 
         return getSearchResponse(solrQuery, conceptSearchResult);
     }

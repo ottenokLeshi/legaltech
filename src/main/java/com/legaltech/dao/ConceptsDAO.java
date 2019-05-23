@@ -53,7 +53,7 @@ public class ConceptsDAO implements CoreDAO {
     public ConceptSearchResult getConcepts(final String query) throws IOException {
         HttpClient client = HttpClientBuilder.create().build();
         HttpPost request = new HttpPost("http://localhost:8080/concepts/concept?field=searchTerm&matchText=true");
-        request.setEntity(new StringEntity("{" + query + "}"));
+        request.setEntity(new StringEntity("{" + query + "}",  "UTF-8"));
 
         HttpResponse response = client.execute(request);
 
