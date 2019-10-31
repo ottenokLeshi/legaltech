@@ -18,7 +18,7 @@
     </description>
 
     <properties>
-        <solr-version>8.0.0</solr-version>
+        <solr-version>8.2.0</solr-version>
         <solr-text-tagger-version>2.5</solr-text-tagger-version>
     </properties>
 
